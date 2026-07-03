@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{{ movie.title }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/details.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="row">
+
+        <!-- Movie Poster -->
+
+        <div class="col-lg-4 mb-4">
+
+            {% if movie.poster %}
+
+            <img src="{{ movie.poster.url }}"
+                class="img-fluid rounded-4 shadow-lg"
+                alt="{{ movie.title }}">
+
+            {% else %}
+
+            <div class="bg-secondary text-center rounded-4 d-flex align-items-center justify-content-center"
+                style="height:500px;">
+
+                <h3>🎬 No Poster</h3>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        <!-- Movie Details -->
+
+        <div class="col-lg-8">
+
+            <h1 class="display-4 fw-bold text-danger">
+                {{ movie.title }}
+            </h1>
+
+            <div class="mb-4">
+
+                <span class="badge bg-warning text-dark fs-6 me-2">
+                    ⭐ {{ movie.imdb_rating }}
+                </span>
+
+                <span class="badge bg-primary fs-6 me-2">
+                    🎭 {{ movie.genre }}
+                </span>
+
+                <span class="badge bg-success fs-6">
+                    🌍 {{ movie.language }}
+                </span>
+
+            </div>
+
+            <hr>
+
+            <h4 class="text-info">📖 Story</h4>
+
+            <p class="fs-5 text-white">
+                {{ movie.description }}
+            </p>
+
+            <div class="row g-3 mt-2">
+
+                <div class="col-sm-6 col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">IMDb Rating</div>
+                        <div class="info-value">⭐ {{ movie.imdb_rating }}/10</div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">Director</div>
+                        <div class="info-value">🎬 {{ movie.director }}</div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">Duration</div>
+                        <div class="info-value">⏱ {{ movie.duration }} Minutes</div>
+                    </div>
+                </div>
+
+            </div><br>
+
+            <div class="info-box cast-box">
+                <div class="info-label">🎭 Cast</div>
+
+                <div class="cast-text">
+                    {% for actor in cast_list|slice:":6" %}{{ actor }}{% if not forloop.last %}, {% endif %}{% endfor %}
+
+                    {% if cast_list|length > 6 %}
+                    <a class="cast-more-link"
+                        data-bs-toggle="collapse"
+                        href="#moreCast"
+                        role="button"
+                        id="castToggleLink"
+                        aria-expanded="false"
+                        aria-controls="moreCast"
+                        data-more-text="+{{ cast_list|length|add:'-6' }} more"
+                        data-less-text="Show less">
+                        +{{ cast_list|length|add:"-6" }} more
+                    </a>
+
+                    <div class="collapse mt-2" id="moreCast">
+                        <span class="cast-extra">{% for actor in cast_list|slice:"6:" %}{{ actor }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-4">
+
+                <a href="/" class="btn btn-outline-light btn-lg rounded-pill">
+                    ⬅ Back
+                    {% if user.is_authenticated %}
+
+    {% if is_favorite %}
+
+        <a href="{% url 'remove_favorite' movie.title %}"
+           class="btn btn-outline-danger btn-lg rounded-pill me-2">
+            💔 Remove Favorite
+        </a>
+
+    {% else %}
+
+        <a href="{% url 'add_favorite' movie.title %}"
+           class="btn btn-danger btn-lg rounded-pill me-2">
+            ❤️ Add to Favorites
+        </a>
+
+    {% endif %}
+
+{% else %}
+
+    <a href="{% url 'login' %}"
+       class="btn btn-warning btn-lg rounded-pill me-2">
+        🔐 Login to Favorite
+    </a>
+
+{% endif %}
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    // Toggle the "+N more" / "Show less" text on the cast link
+    var castToggleLink = document.getElementById('castToggleLink');
+    var moreCastEl = document.getElementById('moreCast');
+
+    if (castToggleLink && moreCastEl) {
+        moreCastEl.addEventListener('shown.bs.collapse', function () {
+            castToggleLink.textContent = castToggleLink.dataset.lessText;
+        });
+        moreCastEl.addEventListener('hidden.bs.collapse', function () {
+            castToggleLink.textContent = castToggleLink.dataset.moreText;
+        });
+    }
+</script>
+
+{% endblock %}

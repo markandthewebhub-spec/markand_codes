@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}
+MovieVerse
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-danger">🎬 MovieVerse</h1>
+        <p class="text-secondary">Discover the Latest & Greatest Movies</p>
+    </div>
+
+    <div class="row g-4">
+
+        {% for movie in movies %}
+
+        <div class="col-lg-4 col-md-6">
+
+            <div class="card border-0 shadow-lg h-100 rounded-4 overflow-hidden">
+
+                {% if movie.poster %}
+
+                <img src="{{ movie.poster.url }}"
+                     class="card-img-top"
+                     style="height:420px; object-fit:cover;">
+
+                {% else %}
+
+                <div class="d-flex justify-content-center align-items-center bg-dark text-white"
+                     style="height:420px;">
+                    <h4>🎥 No Poster</h4>
+                </div>
+
+                {% endif %}
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                        <h4 class="fw-bold mb-0">
+                            {{ movie.title }}
+                        </h4>
+
+                        <span class="badge bg-warning text-dark">
+                            ⭐ {{ movie.imdb_rating }}
+                        </span>
+
+                    </div>
+
+                    <p class="mb-2">
+                        🎭 <strong>{{ movie.genre }}</strong>
+                    </p>
+
+                    <p class="mb-2">
+                        🌍 {{ movie.language }}
+                    </p>
+
+                    <p class="mb-4">
+                        ⏱ {{ movie.duration }} Minutes
+                    </p>
+
+                    <a href="{% url 'movie_details' movie.title %}"
+                       class="btn btn-danger w-100 rounded-pill">
+
+                        View Details →
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="text-center">
+
+            <h2>No Movies Available 🎬</h2>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}
