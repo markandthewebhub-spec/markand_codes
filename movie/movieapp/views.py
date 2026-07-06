@@ -1,25 +1,33 @@
-from django.shortcuts import render
-from .models import Movie
+from django.shortcuts import render,get_object_or_404, redirect
+from .models import Movie, Favorite, Cast
 from .models import Contact
-from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from .models import Favorite
-from .models import Movie, Contact, Favorite
+from .services.tmdb import search_movie, get_movie_details, get_person_details
+from django.http import JsonResponse
+from django.core.files.base import ContentFile
+import requests as ext_requests
 import re
 
-# Create your views here.
 
 def homepage(request):
     search = request.GET.get("search")
+    tmdb_results = []
+
     if search:
         movies = Movie.objects.filter(title__icontains=search)
+        if not movies.exists():
+            tmdb_results = search_movie(search)
     else:
         movies = Movie.objects.all()
-    return render(request, "homepage.html", {"movies": movies})
+
+    return render(request, "homepage.html", {
+        "movies": movies,
+        "tmdb_results": tmdb_results,
+        "search": search,
+    })
 
 
 def database(request):
@@ -41,6 +49,7 @@ def movie_details(request, title):
     movie = get_object_or_404(Movie, title=title)
 
     cast_list = [name.strip() for name in movie.cast.split(",") if name.strip()]
+    cast_members = movie.cast_members.all()
 
     is_favorite = False
 
@@ -50,10 +59,14 @@ def movie_details(request, title):
             movie=movie
         ).exists()
 
+    trailer_embed_url = get_youtube_embed_url(movie.trailer_url)
+
     return render(request, "details.html", {
         "movie": movie,
         "cast_list": cast_list,
+        "cast_members": cast_members,
         "is_favorite": is_favorite,
+        "trailer_embed_url": trailer_embed_url,
     })
 
 
@@ -155,6 +168,7 @@ def user_logout(request):
     logout(request)
     return redirect("homepage")
 
+
 @login_required
 def add_favorite(request, title):
 
@@ -166,6 +180,7 @@ def add_favorite(request, title):
     )
 
     return redirect("movie_details", title=title)
+
 
 @login_required
 def remove_favorite(request, title):
@@ -179,6 +194,7 @@ def remove_favorite(request, title):
 
     return redirect("movie_details", title=title)
 
+
 @login_required
 def favorites(request):
 
@@ -188,12 +204,125 @@ def favorites(request):
         "favorites": favorites
     })
 
-from .services.tmdb import search_movie
-from django.http import JsonResponse
-
 
 def tmdb_test(request):
 
     movies = search_movie("Avengers")
 
     return JsonResponse(movies, safe=False)
+
+
+def add_from_tmdb(request, tmdb_id):
+
+    if Movie.objects.filter(title=request.GET.get("title")).exists():
+        return redirect("homepage")
+
+    data = get_movie_details(tmdb_id)
+
+    if not data:
+        messages.error(request, "Could not fetch movie details.")
+        return redirect("homepage")
+
+    director = "Unknown"
+    for crew in data.get("credits", {}).get("crew", []):
+        if crew.get("job") == "Director":
+            director = crew.get("name")
+            break
+
+    cast_list = [c["name"] for c in data.get("credits", {}).get("cast", [])[:5]]
+    cast = ", ".join(cast_list) if cast_list else "Unknown"
+
+    trailer_url = ""
+    videos = data.get("videos", {}).get("results", [])
+
+    for video in videos:
+        if video.get("site") == "YouTube" and video.get("type") == "Trailer":
+            trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+            break
+
+    if not trailer_url:
+        for video in videos:
+            if video.get("site") == "YouTube" and video.get("type") == "Teaser":
+                trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                break
+
+    if not trailer_url:
+        for video in videos:
+            if video.get("site") == "YouTube":
+                trailer_url = f"https://www.youtube.com/watch?v={video['key']}"
+                break
+
+    release_date = data.get("release_date") or "2000-01-01"
+
+    movie = Movie(
+        title=data.get("title", "Untitled"),
+        tagline=data.get("tagline", "") or "",
+        description=data.get("overview", "") or "No description available.",
+        genre=", ".join([g["name"] for g in data.get("genres", [])]) or "Unknown",
+        language=data.get("original_language", "en"),
+        duration=data.get("runtime") or 90,
+        release_date=release_date,
+        imdb_rating=round(data.get("vote_average", 0), 1),
+        trailer_url=trailer_url,
+        director=director,
+        cast=cast,
+        country=", ".join([c["name"] for c in data.get("production_countries", [])]) or "Unknown",
+        certificate="UA",
+    )
+
+    poster_path = data.get("poster_path")
+    if poster_path:
+        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+        poster_response = ext_requests.get(poster_url)
+        if poster_response.status_code == 200:
+            movie.poster.save(
+                f"{data.get('id')}.jpg",
+                ContentFile(poster_response.content),
+                save=False
+            )
+
+    movie.save()
+
+    # Save cast members with photos
+    cast_data = data.get("credits", {}).get("cast", [])[:10]
+
+    for index, actor in enumerate(cast_data):
+        Cast.objects.create(
+            movie=movie,
+            tmdb_person_id=actor.get("id"),
+            name=actor.get("name", "Unknown"),
+            character=actor.get("character", ""),
+            photo_url=f"https://image.tmdb.org/t/p/w300{actor.get('profile_path')}" if actor.get("profile_path") else "",
+            order=index,
+        )
+
+    messages.success(request, f"{movie.title} added successfully!")
+    return redirect("movie_details", title=movie.title)
+
+
+def actor_details(request, person_id):
+
+    data = get_person_details(person_id)
+
+    if not data:
+        messages.error(request, "Actor details not found.")
+        return redirect("homepage")
+
+    photo_url = ""
+    if data.get("profile_path"):
+        photo_url = f"https://image.tmdb.org/t/p/w300{data.get('profile_path')}"
+
+    known_movies = sorted(
+        data.get("movie_credits", {}).get("cast", []),
+        key=lambda m: m.get("popularity", 0),
+        reverse=True
+    )[:8]
+
+    return render(request, "actor_details.html", {
+        "name": data.get("name"),
+        "biography": data.get("biography") or "No biography available.",
+        "birthday": data.get("birthday"),
+        "place_of_birth": data.get("place_of_birth"),
+        "photo_url": photo_url,
+        "known_movies": known_movies,
+    })
