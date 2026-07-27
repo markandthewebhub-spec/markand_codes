@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}
+My Favorites
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <h1 class="text-danger mb-5">
+        ❤️ My Favorite Movies
+    </h1>
+
+    <div class="row">
+
+        {% for favorite in favorites %}
+
+        <div class="col-md-3 mb-4">
+
+            <div class="card shadow-lg">
+
+                {% if favorite.movie.poster %}
+                    <img src="{{ favorite.movie.poster.url }}" class="img-fluid">
+                {% endif %}
+
+                <div class="card-body">
+
+                    <h5>{{ favorite.movie.title }}</h5>
+
+                    <p>⭐ {{ favorite.movie.imdb_rating }}</p>
+
+                    <a href="{% url 'movie_details' favorite.movie.title %}"
+                       class="btn btn-danger w-100">
+
+                        View Details
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="col-12 text-center">
+
+            <h4 class="text-secondary">
+                ❤️ No favorite movies yet.
+            </h4>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

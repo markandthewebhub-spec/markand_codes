@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}MovieVerse{% endblock %}</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    {% block extra_css %}{% endblock %}
+
+</head>
+
+<body class="bg-dark text-light" style="font-family: 'Poppins', sans-serif;">
+
+<!-- Navbar -->
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-black shadow sticky-top">
+
+    <div class="container">
+
+        <a class="navbar-brand fw-bold fs-3 text-danger" href="/">
+            🎬 MovieVerse
+        </a>
+
+        <button class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbar">
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbar">
+
+            <ul class="navbar-nav mx-auto">
+
+                <li class="nav-item">
+                    <a class="nav-link text-light" href="/">
+                Home</a>
+                </li>
+
+            <li class="nav-item">
+        <a class="nav-link text-light" href="{% url 'genres' %}">Genres
+</a>
+    </li>
+
+            <li class="nav-item">
+                <a class="nav-link text-light" href="{% url 'explore' %}">
+                Explore
+            </a>
+        </li>
+
+            <li class="nav-item">
+                <a class="nav-link text-light" href="{% url 'contact' %}">
+                    Contact
+                </a>
+            </li>
+
+        <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'about' %}">
+                About Us
+                </a>
+        </li>
+
+    </ul>
+
+           <div class="d-flex align-items-center">
+
+        {% if user.is_authenticated %}
+            <span class="text-light me-2 fw-semibold">
+             Welcome, {{ user.username }}
+        </span>
+    {% endif %}
+
+    <div class="dropdown">
+
+        <a class="text-white text-decoration-none"
+           href="#"
+           role="button"
+           data-bs-toggle="dropdown"
+           aria-expanded="false">
+
+            <i class="bi bi-person-circle fs-3"></i>
+
+        </a>
+
+    <ul class="dropdown-menu dropdown-menu-end">
+
+        {% if user.is_authenticated %}
+
+            <li>
+                <h6 class="dropdown-header">
+                    👋 {{ user.username }}
+                </h6>
+            </li>
+
+            <li>
+                <a class="dropdown-item" href="{% url 'favorites' %}">
+                ❤️ My Favorites
+                </a>
+            </li>
+
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+
+            <li>
+                <a class="dropdown-item text-danger"
+                   href="{% url 'logout' %}">
+                    🚪 Logout
+                </a>
+            </li>
+
+        {% else %}
+
+            <li>
+                <a class="dropdown-item"
+                   href="{% url 'login' %}">
+                    🔐 Login
+                </a>
+            </li>
+
+            <li>
+                <a class="dropdown-item"
+                   href="{% url 'register' %}">
+                    📝 Register
+                </a>
+            </li>
+
+        {% endif %}
+
+    </ul>
+
+</div>
+
+        </div>
+
+    </div>
+
+</nav>
+
+<!-- Main Content -->
+
+<div class="container py-5">
+
+    {% block content %}
+
+    {% endblock %}
+
+</div>
+
+<!-- Footer -->
+
+<footer class="bg-black text-center text-secondary py-4 mt-5 border-top border-secondary">
+
+    <h5 class="text-danger">🎬 MovieVerse</h5>
+
+    <p class="mb-1">
+        Discover Movies • Explore Stories • Enjoy Cinema
+    </p>
+
+    <small>
+        © 2026 MovieVerse | Built By Markand ❤️
+    </small>
+
+</footer>
+
+<!-- Bootstrap JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="{% static 'js/scripts.js' %}"></script>
+
+</body>
+
+</html>
